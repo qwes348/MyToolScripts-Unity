@@ -5,12 +5,15 @@ using UnityEngine.UI;
 using Lean.Gui;
 using System;
 using Sirenix.OdinInspector;
+using LeTai.Asset.TranslucentImage;
 
 namespace Oni
 {
     [RequireComponent(typeof(LeanWindow))]
     public class Popup : SerializedMonoBehaviour
     {
+        [SerializeField]
+        protected PopupInfo.PopupType myPopupType;
         [SerializeField]
         protected Text contentText;
         [SerializeField]
@@ -19,11 +22,9 @@ namespace Oni
         protected Transform buttonParent;
         [SerializeField]
         protected List<PopupCurrencyContent> currencyContents;
-        [SerializeField]
-        protected PopupButton defaultButtonPrefab;
 
         [SerializeField]
-        protected Dictionary<PopupInfo.PopupButtonType, PopupButton> buttonPrefabDict;
+        protected TranslucentImage glassImage;
 
         protected LeanWindow myLeanWindow;
         protected Action<PopupInfo.PopupButtonType> buttonClickedAction;
@@ -40,9 +41,10 @@ namespace Oni
                 return myLeanWindow.On;
             }
         }
+        public PopupInfo.PopupType MyPopupType { get => myPopupType; }
         #endregion
 
-        public void Init(PopupInfo info)
+        public virtual void Init(PopupInfo info)
         {
             contentText.text = info.Content;
             smallContentText.text = info.SmallContent;
@@ -51,17 +53,20 @@ namespace Oni
 
             foreach(var cur in currencyContents)
             {
+                if (cur.gameObject == null)
+                    continue;
                 cur.gameObject.SetActive(false);
             }
 
-            if(info.CurrencyDict.Count > 0)
+            if(info.CurrencyDict != null && info.CurrencyDict.Count > 0)
             {
                 currencyContents[0].transform.parent.gameObject.SetActive(true);
                 SetCurrency(info);
             }
             else
             {
-                currencyContents[0].transform.parent.gameObject.SetActive(false);
+                if (currencyContents.Count > 0)
+                    currencyContents[0].transform.parent.gameObject.SetActive(false);
             }
         }
 
@@ -71,10 +76,11 @@ namespace Oni
             for (int i = 0; i < buttonTypes.Length; i++)
             {
                 PopupButton clone;
-                if (buttonPrefabDict.ContainsKey(buttonTypes[i]))
-                    clone = Instantiate(buttonPrefabDict[buttonTypes[i]], buttonParent);
+                var buttonInfo = PopupManager.Instance.GetButtonInfo(buttonTypes[i]);
+                if (buttonInfo != null && buttonInfo.Prefab != null)
+                    clone = Instantiate(buttonInfo.Prefab, buttonParent);
                 else
-                    clone = Instantiate(defaultButtonPrefab, buttonParent);
+                    clone = Instantiate(PopupManager.Instance.DefaultPopupButtonPrefab, buttonParent);
 
                 var info = PopupManager.Instance.GetButtonInfo(buttonTypes[i]);
                 clone.Init(info.ButtonText, buttonTypes[i], this);
@@ -98,15 +104,21 @@ namespace Oni
             }            
         }
 
-        public void Show()
+        public virtual void Show()
         {
             if (myLeanWindow == null)
                 myLeanWindow = GetComponent<LeanWindow>();
 
+            if(glassImage.source == null)
+            {
+                TranslucentImageSource source = FindObjectOfType<TranslucentImageSource>();
+                if (source != null)
+                    glassImage.source = source;
+            }
             myLeanWindow.On = true;
         }
 
-        public void Hide()
+        public virtual void Hide()
         {
             if (myLeanWindow == null)
                 myLeanWindow = GetComponent<LeanWindow>();
@@ -121,7 +133,7 @@ namespace Oni
             myLeanWindow.On = false;
         }
 
-        public void OnButtonClicked(PopupButton btn)
+        public virtual void OnButtonClicked(PopupButton btn)
         {
             buttonClickedAction?.Invoke(btn.ButtonType);
             //PopupManager.Instance.CloseCurrentActivePopup();
