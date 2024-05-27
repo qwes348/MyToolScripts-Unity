@@ -13,6 +13,8 @@ public class DownloadAddressable : MonoBehaviour
 {
     [SerializeField]
     private LauncherSceneCanvas launcherCanvas;
+    [SerializeField]
+    private List<AssetLabelReference> labelsForDownload;
 
     private AsyncOperationHandle currentDownloadingHandle;
     private List<string> labels;
@@ -22,8 +24,9 @@ public class DownloadAddressable : MonoBehaviour
 
     private void Start()
     {
-        // enum타입으로 관리하는 모든 라벨을 List<string>으로 변환
-        labels = Enum.GetNames(typeof(AddressableLabels)).ToList<string>();
+        // 모든 라벨을 List<string>으로 변환
+        labels = new List<string>();
+        labelsForDownload.ForEach(lb => labels.Add(lb.labelString));
 
         CheckTheDownloadFileSize();
     }
@@ -73,11 +76,11 @@ public class DownloadAddressable : MonoBehaviour
                 {
                     launcherCanvas.UpdateWillDownloadSize(SizeHandle.Result);
 
-                    float sizeMB = SizeHandle.Result / 1024f / 1024f;
+                    string fileSizeString = GetFileSize(SizeHandle.Result);
 
                     // 다운로드 확인 팝업
                     PopupInfo info = new PopupInfo.Builder()
-                    .SetContent(string.Format("{0}MB의 추가 리소스 파일이 있습니다.\n지금 다운로드 하시겠습니까?", sizeMB.ToString("N1")))
+                    .SetContent(string.Format("{0}의 추가 리소스 파일이 있습니다.\n지금 다운로드 하시겠습니까?", fileSizeString))
                     .SetButtons(PopupInfo.PopupButtonType.Close, PopupInfo.PopupButtonType.Yes)
                     .SetPopupType(PopupInfo.PopupType.TextPopup)
                     .SetListener(btnType =>
@@ -131,5 +134,25 @@ public class DownloadAddressable : MonoBehaviour
 
         Caching.ClearCache();
         Addressables.UpdateCatalogs();
+    }
+
+    public string GetFileSize(long byteCnt)
+    {
+        string size = "0 Bytes";
+
+        if (byteCnt >= MathF.Pow(1024f, 3f))
+        {
+            size = string.Format("{0:N2} GB", byteCnt / Mathf.Pow(1024f, 3f));
+        }
+        else if (byteCnt >= Mathf.Pow(1024f, 2f))
+        {
+            size = string.Format("{0:N2} MB", byteCnt / Mathf.Pow(1024f, 2f));
+        }
+        else if (byteCnt >= 1024f)
+        {
+            size = string.Format("{0:N2} KB", byteCnt / 1024f);
+        }
+
+        return size;
     }
 }
