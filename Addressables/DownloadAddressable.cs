@@ -18,9 +18,10 @@ public class DownloadAddressable : MonoBehaviour
 
     private AsyncOperationHandle currentDownloadingHandle;
     private List<string> labels;
+    private long patchSize;
+    private Dictionary<string, long> patchMap = new Dictionary<string, long>();
 
     public Action onDownloadComplete;
-    public enum AddressableLabels { UiAssets, CharacterImages, SceneAssets, AudioAssets }
 
     private void Start()
     {
@@ -28,44 +29,21 @@ public class DownloadAddressable : MonoBehaviour
         labels = new List<string>();
         labelsForDownload.ForEach(lb => labels.Add(lb.labelString));
 
-        CheckTheDownloadFileSize();
-    }
-
-    [Button]
-    public void DownloadBundle()
-    {
-        currentDownloadingHandle = Addressables.DownloadDependenciesAsync(labels, Addressables.MergeMode.Union);
-        currentDownloadingHandle.Completed += (AsyncOperationHandle Handle) =>
+        Addressables.InitializeAsync().Completed += handle =>
         {
-            Debug.Log("다운로드 완료!");
-            launcherCanvas.SetStatusText("update complete");
-
-            //다운로드가 끝나면 메모리 해제.
-            Addressables.Release(Handle);
-
-            onDownloadComplete?.Invoke();
+            Addressables.Release(handle);
+            launcherCanvas.SetStatusText("Init addressables complete");
+            CheckDownloadFileSize();
         };
 
-        StartCoroutine(CheckDownloadingPercentCor());
-        launcherCanvas.SetStatusText("downloading...");
-    }
-
-    IEnumerator CheckDownloadingPercentCor()
-    {
-        while (!currentDownloadingHandle.IsDone)
-        {
-            launcherCanvas.UpdateDownloadingPercentage(currentDownloadingHandle.PercentComplete);
-
-            yield return null;
-        }
-
-        launcherCanvas.UpdateDownloadingPercentage(1.0f);
+        onDownloadComplete += GoTitleScene;
     }
 
     [Button]
-    public void CheckTheDownloadFileSize()
+    public void CheckDownloadFileSize()
     {
         launcherCanvas.SetStatusText("check update...");
+        patchSize = default;
 
         //크기를 확인할 번들 또는 번들들에 포함된 레이블을 인자로 주면 됨.
         //long타입으로 반환되는게 특징임.
@@ -74,11 +52,10 @@ public class DownloadAddressable : MonoBehaviour
             {
                 if (SizeHandle.Result > 0)
                 {
-                    launcherCanvas.UpdateWillDownloadSize(SizeHandle.Result);
+                    string fileSizeString = Tools.BytesToFileSizeString(SizeHandle.Result);
 
-                    string fileSizeString = GetFileSize(SizeHandle.Result);
+                    patchSize += SizeHandle.Result;
 
-                    // 다운로드 확인 팝업
                     PopupInfo info = new PopupInfo.Builder()
                     .SetContent(string.Format("{0}의 추가 리소스 파일이 있습니다.\n지금 다운로드 하시겠습니까?", fileSizeString))
                     .SetButtons(PopupInfo.PopupButtonType.Close, PopupInfo.PopupButtonType.Yes)
@@ -88,7 +65,10 @@ public class DownloadAddressable : MonoBehaviour
                         switch (btnType)
                         {
                             case PopupInfo.PopupButtonType.Yes:
-                                DownloadBundle();
+                                //DownloadBundle();
+                                //V2
+                                StartCoroutine(PatchFilesCor());
+                                StartCoroutine(CheckDownloadingProgressCor());
                                 break;
                             case PopupInfo.PopupButtonType.No:
                                 Application.Quit();
@@ -106,7 +86,6 @@ public class DownloadAddressable : MonoBehaviour
                     Debug.Log("이미 모두 다운로드됨");
 
                     launcherCanvas.SetStatusText("up to date");
-                    launcherCanvas.UpdateWillDownloadSize(0);
                     launcherCanvas.UpdateDownloadingPercentage(1f);
 
                     onDownloadComplete?.Invoke();
@@ -115,6 +94,113 @@ public class DownloadAddressable : MonoBehaviour
                 //메모리 해제.
                 Addressables.Release(SizeHandle);
             };
+    }
+
+    IEnumerator PatchFilesCor()
+    {
+        foreach (var label in labels)
+        {
+            var handle = Addressables.GetDownloadSizeAsync(label);
+
+            yield return handle;
+
+            if (handle.Result != decimal.Zero)
+            {
+                launcherCanvas.SetStatusText(string.Format("download label: {0}", label));
+                yield return StartCoroutine(DownloadLabel(label));
+            }
+
+            Addressables.Release(handle);
+        }
+
+        Debug.Log("다운로드 완료!");
+        launcherCanvas.SetStatusText("patch complete");
+        onDownloadComplete?.Invoke();
+    }
+
+    /// <summary>
+    /// 라벨을 하나 하나 받기 (새로운 방식)
+    /// </summary>
+    /// <param name="label"></param>
+    /// <returns></returns>
+    IEnumerator DownloadLabel(string label)
+    {
+        WaitForEndOfFrame wait = new WaitForEndOfFrame();
+        patchMap.Add(label, 0);
+
+        var handle = Addressables.DownloadDependenciesAsync(label, false);
+
+        while (!handle.IsDone)
+        {
+            patchMap[label] = handle.GetDownloadStatus().DownloadedBytes;
+            yield return wait;
+        }
+
+        patchMap[label] = handle.GetDownloadStatus().TotalBytes;
+        Addressables.Release(handle);
+    }
+
+    /// <summary>
+    /// 모든 라벨을 한꺼번에 받기(이전에 쓰던 방식)
+    /// </summary>
+    public void DownloadBundle()
+    {
+        currentDownloadingHandle = Addressables.DownloadDependenciesAsync(labels, Addressables.MergeMode.Union);
+        currentDownloadingHandle.Completed += (AsyncOperationHandle Handle) =>
+        {
+            Debug.Log("다운로드 완료!");
+            launcherCanvas.SetStatusText("patch complete");
+
+            //다운로드가 끝나면 메모리 해제.
+            Addressables.Release(Handle);
+
+            onDownloadComplete?.Invoke();
+        };
+
+        StartCoroutine(CheckDownloadingProgressCor());
+        launcherCanvas.SetStatusText("downloading...");
+    }
+
+    IEnumerator CheckDownloadingProgressCor()
+    {
+        // 예전 방식(모든 라벨 한꺼번에 다운로드)
+        //while(!currentDownloadingHandle.IsDone)
+        //{
+        //    launcherCanvas.UpdateDownloadingPercentage(currentDownloadingHandle.PercentComplete);
+
+        //    yield return null;
+        //}
+
+        //launcherCanvas.UpdateDownloadingPercentage(1.0f);
+
+        // V2
+        var wait = new WaitForEndOfFrame();
+        long currentTotalDownloaded = 0;
+
+        while (true)
+        {
+            currentTotalDownloaded = patchMap.Sum(pair => pair.Value);
+
+            if (currentTotalDownloaded == patchSize && patchSize > 0)
+            {
+                launcherCanvas.UpdateDownloadingPercentage(1.0f);
+                launcherCanvas.UpdateDownloadingSize(patchSize, patchSize);
+                yield break;
+            }
+            else
+            {
+                launcherCanvas.UpdateDownloadingPercentage((float)currentTotalDownloaded / patchSize);
+                launcherCanvas.UpdateDownloadingSize(currentTotalDownloaded, patchSize);
+            }
+
+            currentTotalDownloaded = 0;
+            yield return wait;
+        }
+    }
+
+    public void GoTitleScene()
+    {
+        QRSceneManager.Instance.LoadSceneFromAddressable(QRSceneManager.TitleScene, null, null, null);
     }
 
     [Button]
@@ -135,24 +221,29 @@ public class DownloadAddressable : MonoBehaviour
         Caching.ClearCache();
         Addressables.UpdateCatalogs();
     }
+}
 
-    public string GetFileSize(long byteCnt)
+// Tools
+public static string BytesToFileSizeString(long byteCnt)
+{
+    string size = "0 Bytes";
+
+    if (byteCnt >= MathF.Pow(1024f, 3f))
     {
-        string size = "0 Bytes";
-
-        if (byteCnt >= MathF.Pow(1024f, 3f))
-        {
-            size = string.Format("{0:N2} GB", byteCnt / Mathf.Pow(1024f, 3f));
-        }
-        else if (byteCnt >= Mathf.Pow(1024f, 2f))
-        {
-            size = string.Format("{0:N2} MB", byteCnt / Mathf.Pow(1024f, 2f));
-        }
-        else if (byteCnt >= 1024f)
-        {
-            size = string.Format("{0:N2} KB", byteCnt / 1024f);
-        }
-
-        return size;
+        size = string.Format("{0:N2} GB", byteCnt / Mathf.Pow(1024f, 3f));
     }
+    else if (byteCnt >= Mathf.Pow(1024f, 2f))
+    {
+        size = string.Format("{0:N2} MB", byteCnt / Mathf.Pow(1024f, 2f));
+    }
+    else if (byteCnt >= 1024f)
+    {
+        size = string.Format("{0:N2} KB", byteCnt / 1024f);
+    }
+    else
+    {
+        size = byteCnt.ToString() + "Bytes";
+    }
+
+    return size;
 }
