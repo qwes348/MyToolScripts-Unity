@@ -14,11 +14,6 @@ namespace Oni.Server
     {
         public enum SendType { GET, POST, PUT, DELETE }
 
-        private void Awake()
-        {
-            DontDestroyOnLoad(gameObject);
-        }
-
         // 레거시
         [Obsolete("Use Overloaded method instead")]
         protected virtual IEnumerator SendRequestCor(string url, SendType sendType, JObject jobj, Action<Result> onSucceed, Action<Result> onFailed, Action<Result> onNetworkFailed)
