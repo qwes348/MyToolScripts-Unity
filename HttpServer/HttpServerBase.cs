@@ -10,32 +10,9 @@ using Cysharp.Threading.Tasks;
 
 namespace Oni.Server
 {
-    public class HttpServerBase<T> : MonoBehaviour where T : MonoBehaviour
+    public class HttpServerBase : MonoBehaviour
     {
         public enum SendType { GET, POST, PUT, DELETE }
-
-        private static T instance;
-        public static T Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    GameObject obj;
-                    obj = GameObject.Find(typeof(T).Name);
-                    if (obj == null)
-                    {
-                        obj = new GameObject(typeof(T).Name);
-                        instance = obj.AddComponent<T>();
-                    }
-                    else
-                    {
-                        instance = obj.GetComponent<T>();
-                    }
-                }
-                return instance;
-            }
-        }
 
         private void Awake()
         {
