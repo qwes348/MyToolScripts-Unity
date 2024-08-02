@@ -18,7 +18,7 @@ public class PoolManager : MonoBehaviour
 
         poolDictionary = new Dictionary<string, Stack<Poolable>>();
 
-        foreach(var poolObj in poolableList)
+        foreach (var poolObj in poolableList)
         {
             if (poolObj == null)
                 continue;
@@ -39,13 +39,13 @@ public class PoolManager : MonoBehaviour
             instance = null;
     }
 
-    /* ÇÁ¸®ÆÕ ¶Ç´Â °°Àº ¿ÀºêÁ§Æ®¸¦ ÆÄ¶ó¹ÌÅÍ·Î ¹Ş¾Æ¼­
-     * Ç®·¯ºí ¿ÀºêÁ§Æ®¸¦ Ã£¾ÆÁÜ
+    /* í”„ë¦¬íŒ¹ ë˜ëŠ” ê°™ì€ ì˜¤ë¸Œì íŠ¸ë¥¼ íŒŒë¼ë¯¸í„°ë¡œ ë°›ì•„ì„œ
+     * í’€ëŸ¬ë¸” ì˜¤ë¸Œì íŠ¸ë¥¼ ì°¾ì•„ì¤Œ
      */
     public Poolable Pop(Poolable poolObj)
     {
-        // Ç®¿¡ Á¸ÀçÇÑ´Ù¸é Ã£À½
-        if(poolDictionary.ContainsKey(poolObj.id))
+        // í’€ì— ì¡´ì¬í•œë‹¤ë©´ ì°¾ìŒ
+        if (poolDictionary.ContainsKey(poolObj.id))
         {
             Poolable returnObj = null;
             while (poolDictionary[poolObj.id].Count > 0 && returnObj == null)
@@ -58,7 +58,7 @@ public class PoolManager : MonoBehaviour
                 }
 
                 returnObj.isUsing = true;
-                returnObj.onPop?.Invoke();                
+                returnObj.onPop?.Invoke();
             }
 
             if (returnObj == null)
@@ -72,7 +72,7 @@ public class PoolManager : MonoBehaviour
             currentActivePoolables.Add(returnObj);
             return returnObj;
         }
-        // Ç®¿¡ ¾ø´Ù¸é Ç®À» ¸¸µé°í »õ·Î»ı¼ºÇØ¼­ ¹İÈ¯ÇØÁÜ
+        // í’€ì— ì—†ë‹¤ë©´ í’€ì„ ë§Œë“¤ê³  ìƒˆë¡œìƒì„±í•´ì„œ ë°˜í™˜í•´ì¤Œ
         else
         {
             poolableList.Add(poolObj);
@@ -91,13 +91,13 @@ public class PoolManager : MonoBehaviour
 
     public Poolable Pop(string id)
     {
-        if(!poolDictionary.ContainsKey(id))
+        if (!poolDictionary.ContainsKey(id))
         {
-            Debug.LogError("ID¿¡ ÇØ´çÇÏ´Â Ç®¸µµÈ ¿ÀºêÁ§Æ® ¾øÀ½");
+            Debug.LogError("IDì— í•´ë‹¹í•˜ëŠ” í’€ë§ëœ ì˜¤ë¸Œì íŠ¸ ì—†ìŒ");
             return null;
         }
 
-        // »ı¼ºÇÑ Ç®·¯ºí ¿ÀºêÁ§Æ®°¡ ÀÖ´Ù¸é Å½»ö
+        // ìƒì„±í•œ í’€ëŸ¬ë¸” ì˜¤ë¸Œì íŠ¸ê°€ ìˆë‹¤ë©´ íƒìƒ‰
         if (poolDictionary[id].Count > 0)
         {
             Poolable returnObj = null;
@@ -114,7 +114,7 @@ public class PoolManager : MonoBehaviour
                 returnObj.onPop?.Invoke();
             }
 
-            // ¹Ì»ç¿ëÁßÀÎ Ç®·¯ºí ¿ÀºêÁ§Æ®°¡ ¾ø´Ù¸é »õ·Î»ı¼º
+            // ë¯¸ì‚¬ìš©ì¤‘ì¸ í’€ëŸ¬ë¸” ì˜¤ë¸Œì íŠ¸ê°€ ì—†ë‹¤ë©´ ìƒˆë¡œìƒì„±
             if (returnObj == null)
             {
                 returnObj = Instantiate(poolDictionary[id].Peek().gameObject, transform).GetComponent<Poolable>();
@@ -126,18 +126,18 @@ public class PoolManager : MonoBehaviour
             currentActivePoolables.Add(returnObj);
             return returnObj;
         }
-        // »ı¼ºÇÑ Ç®·¯ºí ¿ÀºêÁ§Æ®°¡ ¾ø´Ù¸é
+        // ìƒì„±í•œ í’€ëŸ¬ë¸” ì˜¤ë¸Œì íŠ¸ê°€ ì—†ë‹¤ë©´
         else
         {
-            // ÇÁ¸®ÆÕ ¸®½ºÆ®¿¡¼­ ¾ÆÀÌµğ·Î ÇÁ¸®ÆÕÀ» Ã£¾Æº½
+            // í”„ë¦¬íŒ¹ ë¦¬ìŠ¤íŠ¸ì—ì„œ ì•„ì´ë””ë¡œ í”„ë¦¬íŒ¹ì„ ì°¾ì•„ë´„
             Poolable prefab = poolableList.Find(p => p.id == id);
             if (prefab == null)
             {
-                Debug.LogError("ID¿¡ ÇØ´çÇÏ´Â Ç®¸µµÈ ¿ÀºêÁ§Æ® ¾øÀ½");
+                Debug.LogError("IDì— í•´ë‹¹í•˜ëŠ” í’€ë§ëœ ì˜¤ë¸Œì íŠ¸ ì—†ìŒ");
                 return null;
             }
 
-            // ÇÁ¸®ÆÕÀ» Ã£¾Ò´Ù¸é »ı¼º
+            // í”„ë¦¬íŒ¹ì„ ì°¾ì•˜ë‹¤ë©´ ìƒì„±
             Poolable clone = Instantiate(prefab.gameObject, transform).GetComponent<Poolable>();
             clone.gameObject.SetActive(false);
             clone.isUsing = true;
