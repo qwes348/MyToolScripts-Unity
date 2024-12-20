@@ -16,31 +16,26 @@ public class Poolable : MonoBehaviour
 
     private float poolingTimer = 0f;
 
-    //[SerializeField]
-    //private int syncID = -1;
-
-    //public int SyncID => syncID;
 
     private void Update()
     {
-        if(isAutoPooling && isUsing)
+        if (isAutoPooling && isUsing)
         {
-            if(poolingTimer < autoPoolingTime)
+            if (poolingTimer < autoPoolingTime)
                 poolingTimer += Time.deltaTime;
             else
             {
                 poolingTimer = 0f;
-                PoolManager.instance.Push(this);                
+                PoolManager.instance.Push(this);
             }
         }
     }
 
-    // 원래는 Vfx 타겟에 붙일용도로 생각했지만 로봇이 비활성화되면 다음 라운드가 돼서 로봇이 활성화 되기전까진 돌아올수없음 그것도 그것대로 문제인것같아서 안씀
     public void ChangeParent(Transform newParent, bool resetParentOnPush = true)
     {
-        transform.parent = newParent;        
+        transform.parent = newParent;
 
-        if(resetParentOnPush)
+        if (resetParentOnPush)
         {
             onPush += () => transform.parent = PoolManager.instance.transform;
         }
@@ -49,5 +44,5 @@ public class Poolable : MonoBehaviour
     public void ResetAutoPoolingTimer()
     {
         poolingTimer = 0f;
-    }    
+    }
 }
