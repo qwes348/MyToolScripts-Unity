@@ -22,8 +22,8 @@ public class Managers : MonoBehaviour
     AudioManager audio = new AudioManager();
     public static AudioManager Audio => Instance.audio;
 
-    SceneManagerYsms scene = new SceneManagerYsms();
-    public static SceneManagerYsms Scene => Instance.scene;
+    SceneManagerLD scene = new SceneManagerLD();
+    public static SceneManagerLD Scene => Instance.scene;
 
     SaveLoadManager saveLoad = new SaveLoadManager();
     public static SaveLoadManager SaveLoad => Instance.saveLoad;
@@ -45,6 +45,10 @@ public class Managers : MonoBehaviour
             {
                 go = new GameObject { name = "@Managers" };
                 go.AddComponent<Managers>();
+                instance = go.GetComponent<Managers>();
+            }
+            else
+            {
                 instance = go.GetComponent<Managers>();
             }
 
