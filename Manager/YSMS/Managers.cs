@@ -45,12 +45,8 @@ public class Managers : MonoBehaviour
             {
                 go = new GameObject { name = "@Managers" };
                 go.AddComponent<Managers>();
-                instance = go.GetComponent<Managers>();
             }
-            else
-            {
-                instance = go.GetComponent<Managers>();
-            }
+            instance = go.GetComponent<Managers>();
 
             DontDestroyOnLoad(go);
 
@@ -64,7 +60,7 @@ public class Managers : MonoBehaviour
 
     public static void Clear()
     {
-        
+
     }
 
     static void GenerateAudioSource()
@@ -73,7 +69,7 @@ public class Managers : MonoBehaviour
         var sfx = new GameObject("@SFX", typeof(AudioSource)).GetComponent<AudioSource>();
         bgm.transform.SetParent(instance.transform);
         sfx.transform.SetParent(instance.transform);
-        
+
         instance.audio.SetAudioSource(bgm, sfx);
     }
 
