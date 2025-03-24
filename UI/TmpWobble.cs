@@ -1,79 +1,48 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 using TMPro;
- 
+
+[ExecuteInEditMode]
 public class TmpWobble : MonoBehaviour
 {
-    public float wobblePower = 1f;
+    public float wobbleAmount = 10f;
+    public float wobbleSpeed = 5f;
     
-    private TMP_Text textMesh;
-    private Mesh mesh;
-    private Vector3[] vertices;
- 
-    private List<int> wordIndexes;
-    private List<int> wordLengths;
- 
-    public Gradient rainbow;
-    
-    void Start()
+    private TMP_Text textComponent;
+
+    private void Start()
     {
-        textMesh = GetComponent<TMP_Text>();
- 
-        wordIndexes = new List<int>{0};
-        wordLengths = new List<int>();
- 
-        string s = textMesh.text;
-        for (int index = s.IndexOf(' '); index > -1; index = s.IndexOf(' ', index + 1))
-        {
-                wordLengths.Add(index - wordIndexes[wordIndexes.Count - 1]);
-                wordIndexes.Add(index + 1);
-        }
-        wordLengths.Add(s.Length - wordIndexes[wordIndexes.Count - 1]);
+        textComponent = GetComponent<TMP_Text>();
     }
-    
-    void Update()
+
+    private void Update()
     {
-        textMesh.ForceMeshUpdate();
-        mesh = textMesh.mesh;
-        vertices = mesh.vertices;
- 
-        Color[] colors = mesh.colors;
- 
-        for (int w = 0; w < wordIndexes.Count; w++)
+        if (textComponent == null)
+            return;
+        
+        textComponent.ForceMeshUpdate();
+        var textInfo = textComponent.textInfo;
+
+        for (int i = 0; i < textInfo.characterCount; i++)
         {
-            int wordIndex = wordIndexes[w];
-            Vector3 offset = Wobble(Time.time + w) * wobblePower;
- 
-            for (int i = 0; i < wordLengths[w]; i++)
+            var charInfo = textInfo.characterInfo[i];
+            if(!charInfo.isVisible)
+                continue;
+            
+            var verts = textInfo.meshInfo[charInfo.materialReferenceIndex].vertices;
+
+            for (int j = 0; j < 4; j++)
             {
-                TMP_CharacterInfo c = textMesh.textInfo.characterInfo[wordIndex+i];
- 
-                int index = c.vertexIndex;
- 
-                colors[index] = rainbow.Evaluate(Mathf.Repeat(Time.time + vertices[index].x*0.001f, 1f));
-                colors[index + 1] = rainbow.Evaluate(Mathf.Repeat(Time.time + vertices[index + 1].x*0.001f, 1f));
-                colors[index + 2] = rainbow.Evaluate(Mathf.Repeat(Time.time + vertices[index + 2].x*0.001f, 1f));
-                colors[index + 3] = rainbow.Evaluate(Mathf.Repeat(Time.time + vertices[index + 3].x*0.001f, 1f));
- 
-                vertices[index] += offset;
-                vertices[index + 1] += offset;
-                vertices[index + 2] += offset;
-                vertices[index + 3] += offset;
- 
-                
+                var origin = verts[charInfo.vertexIndex + j];
+                verts[charInfo.vertexIndex + j] = origin + Vector3.up * (Mathf.Sin(Time.time * wobbleSpeed + origin.x + 0.01f) * wobbleAmount);
             }
         }
- 
-        
- 
-        mesh.vertices = vertices;
-        mesh.colors = colors;
-        textMesh.canvasRenderer.SetMesh(mesh);
-    }
- 
-    Vector2 Wobble(float time) 
-    {
-        return new Vector2(Mathf.Sin(time*3.3f), Mathf.Cos(time*2.5f));
+
+        for (int i = 0; i < textInfo.meshInfo.Length; i++)
+        {
+            var meshInfo = textInfo.meshInfo[i];
+            meshInfo.mesh.vertices = textInfo.meshInfo[i].vertices;
+            textComponent.UpdateGeometry(meshInfo.mesh, i);
+        }
     }
 }
