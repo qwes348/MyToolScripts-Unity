@@ -9,16 +9,19 @@ public class AudioManager
 {
     private AudioSource bgmSource;
     private AudioSource sfxSource;
+    private AudioDatabase audioDb;
 
     public void Init()
     {
         bgmSource.volume = Managers.SaveLoad.localSaveData.BGMVolume;
         bgmSource.loop = true;
         bgmSource.playOnAwake = true;
-        
+
         sfxSource.volume = Managers.SaveLoad.localSaveData.SFXVolume;
         sfxSource.loop = false;
         sfxSource.playOnAwake = false;
+
+        audioDb = Resources.Load<AudioDatabase>("Data/AudioDatabase");
     }
 
     public void SetAudioSource(AudioSource bgm, AudioSource sfx)
@@ -29,7 +32,12 @@ public class AudioManager
 
     public async UniTask PlayBgm(Define.Bgm bgm)
     {
-        string address = new StringBuilder(bgm.ToString()).Insert(0,"Bgm/").ToString();
+        string address = audioDb.GetAddressableKey(bgm);
+        if (address == null)
+        {
+            Debug.LogError($"BGM 없음 : {bgm.ToString()}");
+            return;
+        }
         var clip = await Managers.Resource.LoadAsset<AudioClip>(address);
 
         if (bgmSource.isPlaying)
@@ -48,15 +56,20 @@ public class AudioManager
 
     public async UniTask PlaySfx(Define.Sfx sfx)
     {
-        string address = new StringBuilder(sfx.ToString()).Insert(0, "Sfx/").ToString();
+        string address = audioDb.GetAddressableKey(sfx);
+        if (address == null)
+        {
+            Debug.LogError($"SFX 없음 : {sfx.ToString()}");
+            return;
+        }
         var clip = await Managers.Resource.LoadAsset<AudioClip>(address);
-        
+
         sfxSource.PlayOneShot(clip);
     }
 
     public void SetBgmPitch(int pitchLevel)
     {
-        bgmSource.pitch = Define.BGM_PITCH[pitchLevel];
+        bgmSource.pitch = Define.BGMPitch[pitchLevel];
     }
 
     public void SetBgmVolume(float volume)

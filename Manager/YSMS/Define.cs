@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Define 
+public class Define
 {
     #region constant
-    
+
     public const int MAX_CHARACTERS_COUNT = 20;
     public const int LEVEL_UP_THRESHOLD = 4000;
     public const int MAX_LEVEL = 4;
     public const int FEVER_THRESHOLD = 10;
     public const int SUPER_FEVER_THRESHOLD = 25;
-    
+
     public const float SPECIAL_PROBABILITY = 0.02f;
     public const float GAME_INITIAL_TIME = 60f;
     public const float FEVER_DURATION = 3f;
@@ -20,7 +20,7 @@ public class Define
     public const float DEFAULT_SFX_VOLUME = 0.5f;
 
     public static readonly float[] BGM_PITCH = new float[] { 1.0f, 1.1f, 1.2f };
-    
+
     #endregion
 
     #region enum
@@ -79,6 +79,7 @@ public class Define
     }
     public enum Sfx
     {
+        None = -1,
         Move,
         Click,
         GameStart,
@@ -86,6 +87,7 @@ public class Define
     }
     public enum Bgm
     {
+        None = -1,
         Title,
         Game,
         Score
