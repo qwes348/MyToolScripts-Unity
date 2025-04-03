@@ -62,7 +62,7 @@ Shader "Oniboogie/StencilMaskTransitionWithID"
             {
                 // Transition Texture의 알파 값을 사용하여 마스크 처리
                 half4 col = tex2D(_TransitionTex, i.uv);
-                if (col.r < _AlphaCutoff) // 검은 부분을 기준으로 클리핑
+                if (col.a < _AlphaCutoff) // 알파 부분을 기준으로 클리핑
                     discard;
 
                 return col;
